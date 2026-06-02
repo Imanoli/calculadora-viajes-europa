@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Viajes · Europa</title>
+<style>
+  :root{
+    --bg:#0f0f13;--card:#1a1a24;--card2:#22222f;--border:#2a2a3a;
+    --accent:#7c6af7;--green:#22c55e;--orange:#f97316;--blue:#38bdf8;
+    --yellow:#fbbf24;--pink:#ec4899;--text:#f0f0f5;--muted:#888899;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 20px;}
+  .wrap{width:100%;max-width:460px;}
+
+  /* HEADER */
+  .header{text-align:center;margin-bottom:24px;}
+  .tag{display:inline-block;background:var(--accent);color:#fff;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:10px;}
+  h1{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.1;}
+  h1 span{color:var(--accent);}
+  .sub{color:var(--muted);font-size:13px;margin-top:6px;}
+
+  /* DAYS INPUT */
+  .days-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:22px;}
+  .days-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .days-label{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+  .days-value{font-size:34px;font-weight:900;color:var(--accent);line-height:1;}
+  .days-value span{font-size:16px;color:var(--muted);font-weight:600;}
+  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:8px;background:var(--border);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid #fff;box-shadow:0 0 8px rgba(124,106,247,.5);}
+  input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid #fff;}
+  .days-marks{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px;}
+  .quick-days{display:flex;gap:6px;margin-top:12px;}
+  .qd-btn{flex:1;background:rgba(124,106,247,.08);border:1px solid var(--border);color:var(--text);font-size:12px;font-weight:600;padding:6px;border-radius:8px;cursor:pointer;transition:all .15s;}
+  .qd-btn:hover,.qd-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .flight-btn{width:100%;margin-top:10px;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:600;padding:9px;border-radius:10px;cursor:pointer;transition:all .15s;}
+  .flight-btn.active{background:rgba(34,197,94,.12);border-color:var(--green);color:var(--green);}
+
+  /* CARDS */
+  .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:12px;}
+  .style-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:12px;position:relative;overflow:hidden;transition:transform .15s,border-color .15s;}
+  .style-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:5px 0 0 5px;}
+  .sc-low::before{background:var(--green);}
+  .sc-avg::before{background:var(--accent);}
+  .sc-comfort::before{background:var(--yellow);}
+  .style-card.featured{border-color:var(--accent);border-width:2px;transform:scale(1.02);box-shadow:0 4px 24px rgba(124,106,247,.18);}
+  .featured-tag{position:absolute;top:12px;right:14px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:10px;}
+
+  .sc-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;}
+  .sc-emoji{font-size:22px;}
+  .sc-name{font-size:17px;font-weight:800;}
+  .sc-perday{font-size:12px;color:var(--muted);margin-left:auto;}
+  .sc-perday strong{color:var(--text);font-size:14px;}
+
+  .sc-total{font-size:36px;font-weight:900;line-height:1;margin-bottom:14px;}
+  .sc-low .sc-total{color:var(--green);}
+  .sc-avg .sc-total{color:var(--accent);}
+  .sc-comfort .sc-total{color:var(--yellow);}
+
+  .breakdown{display:flex;flex-direction:column;gap:8px;}
+  .bd-row{display:flex;align-items:center;gap:8px;font-size:12px;}
+  .bd-icon{width:18px;text-align:center;}
+  .bd-name{color:var(--muted);width:130px;flex-shrink:0;font-size:11px;line-height:1.2;}
+  .bd-perday{font-size:11px;color:var(--muted);width:50px;text-align:right;flex-shrink:0;}
+  .bd-bar-wrap{flex:1;background:var(--border);border-radius:5px;height:6px;overflow:hidden;}
+  .bd-bar{height:100%;border-radius:5px;transition:width .5s;}
+  .bd-pct{font-size:11px;color:var(--muted);width:32px;text-align:right;flex-shrink:0;}
+  .bd-val{font-weight:700;width:64px;text-align:right;flex-shrink:0;}
+
+  /* CUSTOM */
+  .custom-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;}
+  .custom-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .ct-label{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+  .ct-days{display:flex;align-items:center;gap:8px;}
+  .ct-step{width:34px;height:34px;border-radius:9px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .ct-step:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+  #customDays{width:64px;height:38px;text-align:center;font-size:20px;font-weight:800;background:var(--card2);border:1px solid var(--border);border-radius:9px;color:var(--accent);}
+  .custom-inputs{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+  .ci-row{display:flex;align-items:center;gap:10px;}
+  .ci-icon{font-size:18px;width:22px;text-align:center;}
+  .ci-name{flex:1;font-size:13px;}
+  .ci-field{display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:4px 10px;}
+  .ci-field>span{color:var(--muted);font-size:13px;}
+  .ci-field input{width:54px;background:transparent;border:none;color:var(--text);font-size:16px;font-weight:700;text-align:right;outline:none;}
+  .ci-day{font-size:11px;color:var(--muted);}
+  .custom-result{text-align:center;padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px;}
+  .cr-perday{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:4px;}
+  .cr-total{font-size:44px;font-weight:900;color:var(--green);line-height:1;}
+  .cr-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:6px;}
+  .custom-breakdown{display:flex;flex-direction:column;gap:8px;}
+  /* quita flechas de los number inputs */
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+  input[type=number]{-moz-appearance:textfield;}
+
+  .footer{text-align:center;color:var(--muted);font-size:11px;letter-spacing:1px;margin-top:18px;}
+  .footer strong{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="tag">Cuánto cuesta</div>
+    <h1>Calculadora de <span>viajes</span> por Europa</h1>
+    <div class="sub">Movés los días y mirás cuánto gastás según tu estilo</div>
+  </div>
+
+  <!-- DÍAS -->
+  <div class="days-card">
+    <div class="days-top">
+      <div class="days-label">Días de viaje</div>
+      <div class="days-value"><span id="daysNum">15</span> <span>días</span></div>
+    </div>
+    <input type="range" id="daysSlider" min="1" max="60" value="15" oninput="update()">
+    <div class="days-marks"><span>1</span><span>15</span><span>30</span><span>45</span><span>60</span></div>
+    <div class="quick-days">
+      <button class="qd-btn" onclick="setDays(7)">7</button>
+      <button class="qd-btn active" onclick="setDays(15)">15</button>
+      <button class="qd-btn" onclick="setDays(21)">21</button>
+      <button class="qd-btn" onclick="setDays(30)">30</button>
+      <button class="qd-btn" onclick="setDays(60)">60</button>
+    </div>
+    <button class="flight-btn" id="flightBtn" onclick="toggleFlight()">✈ Agregar vuelo largo (€1.000)</button>
+  </div>
+
+  <!-- ESTILOS -->
+  <div class="sec-title">Tu viaje según el estilo</div>
+  <div id="cards"></div>
+
+  <!-- CALCULADORA PROPIA -->
+  <div class="sec-title" style="margin-top:26px">✏️ Armá tu propio viaje</div>
+  <div class="custom-card">
+    <div class="custom-top">
+      <div class="ct-label">Días</div>
+      <div class="ct-days">
+        <button class="ct-step" onclick="customDayStep(-1)">−</button>
+        <input type="number" id="customDays" value="15" min="1" max="365" oninput="renderCustom()">
+        <button class="ct-step" onclick="customDayStep(1)">+</button>
+      </div>
+    </div>
+
+    <div class="custom-inputs">
+      <div class="ci-row">
+        <span class="ci-icon">🛏</span>
+        <span class="ci-name">Alojamiento</span>
+        <div class="ci-field"><span>€</span><input type="number" id="inAloj" value="40" min="0" oninput="renderCustom()"><span class="ci-day">/día</span></div>
+      </div>
+      <div class="ci-row">
+        <span class="ci-icon">🍕</span>
+        <span class="ci-name">Comida</span>
+        <div class="ci-field"><span>€</span><input type="number" id="inComida" value="35" min="0" oninput="renderCustom()"><span class="ci-day">/día</span></div>
+      </div>
+      <div class="ci-row">
+        <span class="ci-icon">🚌</span>
+        <span class="ci-name">Transporte y actividades</span>
+        <div class="ci-field"><span>€</span><input type="number" id="inTrans" value="25" min="0" oninput="renderCustom()"><span class="ci-day">/día</span></div>
+      </div>
+      <div class="ci-row">
+        <span class="ci-icon">✈️</span>
+        <span class="ci-name">Vuelo largo <span style="font-size:10px">(fijo)</span></span>
+        <div class="ci-field"><span>€</span><input type="number" id="inVuelo" value="0" min="0" oninput="renderCustom()"><span class="ci-day">total</span></div>
+      </div>
+    </div>
+
+    <div class="custom-result">
+      <div class="cr-perday">€<span id="crPerDay">100</span> <span style="font-size:13px;color:var(--muted)">/día</span></div>
+      <div class="cr-total">€<span id="crTotal">1.500</span></div>
+      <div class="cr-label">Total de tu viaje</div>
+    </div>
+    <div class="custom-breakdown" id="customBreakdown"></div>
+  </div>
+
+  <div class="footer"><strong>@imaarodriguez</strong> · Calculadora de viajes</div>
+
+</div>
+
+<script>
+const STYLES = [
+  { id:'avg', cls:'sc-avg', emoji:'🎒', name:'Promedio', perDay:100, featured:true,
+    items:[['🛏','Alojamiento',40,'var(--blue)'],['🍕','Comida',35,'var(--green)'],['🚌','Transporte y actividades',25,'var(--orange)']] },
+  { id:'low', cls:'sc-low', emoji:'💸', name:'Low cost', perDay:65, featured:false,
+    items:[['🛏','Alojamiento',25,'var(--blue)'],['🍕','Comida',20,'var(--green)'],['🚌','Transporte y actividades',20,'var(--orange)']] },
+  { id:'comfort', cls:'sc-comfort', emoji:'✨', name:'Cómodo', perDay:170, featured:false,
+    items:[['🛏','Alojamiento',70,'var(--blue)'],['🍕','Comida',60,'var(--green)'],['🚌','Transporte y actividades',40,'var(--orange)']] },
+];
+
+let days = 15;
+let addFlight = false;
+const FLIGHT = 1000;
+
+function fmt(n){ return '€' + Math.round(n).toLocaleString('de-DE'); }
+
+function render(){
+  const maxItem = 70; // valor por día más alto, para escalar las barras
+  document.getElementById('cards').innerHTML = STYLES.map(s=>{
+    const total = s.perDay * days + (addFlight ? FLIGHT : 0);
+    const rows = s.items.map(([ic,name,val,color])=>{
+      const w = Math.round(val/maxItem*100);
+      const pct = Math.round(val/s.perDay*100);
+      return `<div class="bd-row">
+        <div class="bd-icon">${ic}</div>
+        <div class="bd-name">${name}</div>
+        <div class="bd-perday">${fmt(val)}/d</div>
+        <div class="bd-bar-wrap"><div class="bd-bar" style="width:${w}%;background:${color}"></div></div>
+        <div class="bd-pct">${pct}%</div>
+        <div class="bd-val">${fmt(val*days)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="style-card ${s.cls} ${s.featured?'featured':''}">
+      <div class="sc-head">
+        <span class="sc-emoji">${s.emoji}</span>
+        <span class="sc-name">${s.name}</span>
+        <span class="sc-perday"><strong>${fmt(s.perDay)}</strong>/día</span>
+      </div>
+      <div class="sc-total">${fmt(total)}</div>
+      <div class="breakdown">${rows}${addFlight ? `<div class="bd-row" style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px"><div class="bd-icon">✈️</div><div class="bd-name">Vuelo largo</div><div class="bd-perday">fijo</div><div class="bd-bar-wrap"><div class="bd-bar" style="width:100%;background:var(--pink)"></div></div><div class="bd-pct">${Math.round(FLIGHT/total*100)}%</div><div class="bd-val">${fmt(FLIGHT)}</div></div>` : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function update(){
+  days = parseInt(document.getElementById('daysSlider').value);
+  document.getElementById('daysNum').textContent = days;
+  document.querySelectorAll('.qd-btn').forEach(b=>b.classList.remove('active'));
+  render();
+}
+function setDays(n){
+  days = n;
+  document.getElementById('daysSlider').value = n;
+  document.getElementById('daysNum').textContent = n;
+  document.querySelectorAll('.qd-btn').forEach(b=>b.classList.toggle('active', b.textContent==String(n)));
+  render();
+}
+function toggleFlight(){
+  addFlight = !addFlight;
+  const btn = document.getElementById('flightBtn');
+  btn.classList.toggle('active', addFlight);
+  btn.textContent = addFlight ? '✓ Vuelo largo agregado (€1.000)' : '✈ Agregar vuelo largo (€1.000)';
+  render();
+}
+
+render();
+
+// ── CALCULADORA PROPIA ──────────────────────────────────────────
+function customDayStep(d){
+  const inp = document.getElementById('customDays');
+  inp.value = Math.max(1, (parseInt(inp.value)||1) + d);
+  renderCustom();
+}
+function renderCustom(){
+  const d = Math.max(1, parseInt(document.getElementById('customDays').value)||1);
+  const aloj = parseFloat(document.getElementById('inAloj').value)||0;
+  const com = parseFloat(document.getElementById('inComida').value)||0;
+  const tra = parseFloat(document.getElementById('inTrans').value)||0;
+  const vue = parseFloat(document.getElementById('inVuelo').value)||0;
+
+  const perDay = aloj + com + tra;
+  const total = perDay * d + vue;
+
+  document.getElementById('crPerDay').textContent = Math.round(perDay).toLocaleString('de-DE');
+  document.getElementById('crTotal').textContent = Math.round(total).toLocaleString('de-DE');
+
+  const cats = [
+    ['🛏','Alojamiento', aloj*d, 'var(--blue)'],
+    ['🍕','Comida', com*d, 'var(--green)'],
+    ['🚌','Transporte y actividades', tra*d, 'var(--orange)'],
+  ];
+  if(vue>0) cats.push(['✈️','Vuelo largo', vue, 'var(--pink)']);
+
+  document.getElementById('customBreakdown').innerHTML = cats.map(([ic,name,val,color])=>{
+    const pct = total>0 ? Math.round(val/total*100) : 0;
+    return `<div class="bd-row">
+      <div class="bd-icon">${ic}</div>
+      <div class="bd-name">${name}</div>
+      <div class="bd-bar-wrap"><div class="bd-bar" style="width:${pct}%;background:${color}"></div></div>
+      <div class="bd-pct">${pct}%</div>
+      <div class="bd-val">${fmt(val)}</div>
+    </div>`;
+  }).join('');
+}
+renderCustom();
+</script>
+</body>
+</html>
