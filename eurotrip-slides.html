@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eurotrip 2026 · Slides</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{--bg:#0f0f13;--card:#1a1a24;--card2:#22222f;--border:#2a2a3a;--accent:#7c6af7;--green:#22c55e;--orange:#f97316;--blue:#38bdf8;--yellow:#fbbf24;--pink:#ec4899;--text:#f0f0f5;--muted:#888899;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;width:100vw;height:100vh;}
+
+  /* SLIDES */
+  .slide{position:absolute;inset:0;padding:36px 52px 72px;display:flex;flex-direction:column;opacity:0;pointer-events:none;transform:translateX(50px);transition:opacity .3s,transform .3s;overflow:hidden;}
+  .slide.active{opacity:1;pointer-events:all;transform:translateX(0);}
+  .slide.out{transform:translateX(-50px);}
+
+  /* NAV */
+  .nav{position:fixed;bottom:0;left:0;right:0;height:60px;background:rgba(15,15,19,.97);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:100;}
+  .nav-btn{background:var(--card);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+  .nav-btn:hover{background:var(--card2);}.nav-btn:disabled{opacity:.2;cursor:default;}
+  .nav-center{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .nav-dots{display:flex;gap:6px;align-items:center;}
+  .nav-dot{width:7px;height:7px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .2s;}
+  .nav-dot.active{background:var(--accent);width:22px;border-radius:4px;}
+  .nav-label{font-size:10px;color:var(--muted);}
+  .nav-sync{display:flex;align-items:center;gap:8px;font-size:11px;}
+  .sync-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;}
+  .sync-ok{color:var(--green);}.sync-err{color:var(--orange);}.sync-loading{color:var(--blue);}
+
+  /* COMMON */
+  .stitle{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1;}.stitle span{color:var(--accent);}
+  .ssub{font-size:13px;color:var(--muted);margin-top:5px;}
+  .shead{margin-bottom:18px;flex-shrink:0;}
+  .aline{width:36px;height:4px;border-radius:2px;margin-bottom:8px;}
+  .pill{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;text-transform:uppercase;}
+  .pill-solo{background:rgba(56,189,248,.15);color:var(--blue);}
+  .pill-amigos{background:rgba(236,72,153,.15);color:var(--pink);}
+  .pill-pareja{background:rgba(251,191,36,.15);color:var(--yellow);}
+
+  /* PORTADA */
+  #s0{justify-content:center;align-items:center;text-align:center;padding-bottom:72px;}
+  .big-title{font-size:56px;font-weight:900;letter-spacing:-2px;line-height:1;}.big-title span{color:var(--accent);}
+  .big-dates{font-size:17px;color:var(--muted);margin:10px 0 28px;}
+  .stats-row{display:flex;gap:14px;justify-content:center;margin-bottom:26px;}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 26px;text-align:center;min-width:100px;}
+  .stat .val{font-size:36px;font-weight:900;line-height:1;}.stat .lbl{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+  .handle{font-size:13px;color:var(--muted);letter-spacing:1px;}.handle strong{color:var(--accent);}
+
+  /* ETAPAS SLIDE */
+  .stages-list{display:flex;flex-direction:column;gap:10px;flex:1;}
+  .srow{display:flex;align-items:center;gap:16px;padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:14px;position:relative;overflow:hidden;flex:1;}
+  .srow::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px;}
+  .s0r::before{background:var(--accent);}.s1r::before{background:var(--blue);}
+  .s2r::before{background:var(--pink);}.s3r::before{background:var(--orange);}.s4r::before{background:var(--yellow);}
+  .sem{font-size:24px;flex-shrink:0;}.sinfo{flex:1;}
+  .sname{font-size:15px;font-weight:700;}.smeta{font-size:12px;color:var(--muted);margin-top:3px;}
+  .snums{text-align:right;flex-shrink:0;}
+  .scost{font-size:22px;font-weight:800;}.sday{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  /* MAPA */
+  .map-wrap{flex:1;border-radius:14px;overflow:hidden;border:1px solid var(--border);display:flex;flex-direction:column;min-height:0;}
+  #routeMap{flex:1;min-height:0;}
+  .map-filters{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;background:var(--card);border-top:1px solid var(--border);flex-shrink:0;}
+  .mfbtn{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;cursor:pointer;border:1.5px solid transparent;background:rgba(255,255,255,.05);color:var(--text);transition:opacity .15s;}
+  .mfbtn .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}.mfbtn.off{opacity:.3;}
+
+  /* PRESUPUESTO */
+  .bcat{display:flex;align-items:center;gap:10px;}
+  .bcat-name{font-size:14px;width:120px;flex-shrink:0;}
+  .bcat-bar-wrap{flex:1;background:var(--border);border-radius:6px;height:11px;overflow:hidden;}
+  .bcat-bar{height:100%;border-radius:6px;transition:width .6s;}
+  .bcat-amount{font-size:14px;font-weight:700;width:64px;text-align:right;flex-shrink:0;}
+  .bcat-pct{font-size:12px;color:var(--muted);width:32px;text-align:right;flex-shrink:0;}
+
+  /* DETALLE ETAPA */
+  .detail-wrap{flex:1;display:flex;flex-direction:column;min-height:0;}
+  .bd-bar{display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:10px;flex-shrink:0;}
+  .pl-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:9px 14px;margin-bottom:7px;}
+  .pl-flag{font-size:22px;flex-shrink:0;}
+  .pl-main{flex:1;}
+  .pl-name{font-size:14px;font-weight:700;}
+  .pl-dates{font-size:11px;color:var(--muted);margin-top:1px;}
+  .pl-cost{text-align:right;flex-shrink:0;}
+  .pl-cost-val{font-size:17px;font-weight:800;color:var(--green);}
+  .pl-cost-lbl{font-size:11px;color:var(--muted);margin-left:2px;}
+  .bd-total{font-size:20px;font-weight:900;color:var(--accent);flex-shrink:0;padding-right:12px;border-right:1px solid var(--border);}
+  .bd-items{display:flex;flex-wrap:wrap;gap:2px 12px;}
+  .bd-item{font-size:11px;color:var(--muted);}.bd-item strong{color:var(--text);}
+  .scroll-area{flex:1;overflow-y:auto;padding-right:4px;}
+  .scroll-area::-webkit-scrollbar{width:3px;}
+  .scroll-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+  /* CITY CARD */
+  .city-card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden;}
+  .city-card-header{padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+  .city-flag{font-size:20px;}.city-info{flex:1;}.city-name{font-size:14px;font-weight:700;}.city-dates{font-size:11px;color:var(--muted);margin-top:2px;}
+  .map-btn{background:rgba(124,106,247,.15);border:1px solid rgba(124,106,247,.3);color:var(--accent);font-size:11px;font-weight:600;padding:4px 9px;border-radius:8px;text-decoration:none;white-space:nowrap;}
+  .city-body{padding:9px 14px 11px;}
+  .drow{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:12px;}.drow:last-child{margin-bottom:0;}
+  .dicon{font-size:13px;flex-shrink:0;width:18px;text-align:center;margin-top:1px;}
+  .dcontent{flex:1;color:var(--muted);line-height:1.4;}.dcontent strong{color:var(--text);}
+  .tours-wrap{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+  .psec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:5px;}
+  .tour-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}.tour-item:last-child{border-bottom:none;}
+  .tour-body{flex:1;}.tour-name{font-weight:600;}.tour-meta{color:var(--muted);margin-top:2px;font-size:11px;}
+  .tour-cost{font-weight:700;color:var(--green);flex-shrink:0;}
+  .badge-ok{background:rgba(34,197,94,.15);color:var(--green);font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;}
+  .badge-no{background:rgba(249,115,22,.15);color:var(--orange);font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;}
+
+  /* TRANSPORT */
+  .transport-row{display:flex;align-items:center;gap:8px;padding:7px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-size:12px;}
+  .ticon{font-size:15px;flex-shrink:0;}.tbody{flex:1;}.troute{font-weight:600;font-size:12px;}.tmeta{color:var(--muted);font-size:11px;margin-top:2px;}
+  .tcost{font-size:12px;font-weight:700;color:var(--green);flex-shrink:0;}
+
+  /* Ajustes para celular: que cada etapa entre en una captura */
+  @media (max-width:600px){
+    .slide{padding:20px 18px 64px;}
+    .shead{margin-bottom:12px;}
+    .stitle{font-size:22px;}
+    .ssub{font-size:12px;}
+    .pl-row{padding:7px 12px;margin-bottom:6px;gap:10px;}
+    .pl-flag{font-size:19px;}
+    .pl-name{font-size:13px;}
+    .pl-dates{font-size:10px;}
+    .pl-cost-val{font-size:15px;}
+    .bd-total{font-size:18px;padding-right:10px;}
+    .bd-item{font-size:10px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 0: PORTADA -->
+<div class="slide active" id="s0">
+  <div class="big-title">Mi <span>Eurotrip</span><br>2026</div>
+  <div class="big-dates">22 Julio → 17 Septiembre</div>
+  <div class="stats-row">
+    <div class="stat"><div class="val" style="color:var(--accent)">57</div><div class="lbl">Días</div></div>
+    <div class="stat"><div class="val" style="color:var(--blue)">12</div><div class="lbl">Países</div></div>
+    <div class="stat"><div class="val" style="color:var(--pink)">22</div><div class="lbl">Ciudades</div></div>
+    <div class="stat"><div class="val" style="color:var(--green)" id="statBudget">€6.6k</div><div class="lbl">Presupuesto</div></div>
+  </div>
+  <div class="handle"><strong>@imaarodriguez</strong> · Eurotrip 2026</div>
+</div>
+
+<!-- SLIDE 1: ETAPAS -->
+<div class="slide" id="s1">
+  <div class="shead">
+    <div class="aline" style="background:var(--accent)"></div>
+    <div class="stitle">Las <span>5 etapas</span></div>
+    <div class="ssub">57 días · 12 países · 22 ciudades</div>
+  </div>
+  <div class="stages-list">
+    <div class="srow s0r"><div class="sem">✈️</div><div class="sinfo"><div class="sname" id="name-0">Vuelos largos</div><div class="smeta">CBA → MAD → CBA · Avianca vía Bogotá</div><span class="pill pill-solo">Fijo</span></div><div class="snums"><div class="scost" style="color:var(--accent)" id="cost-0">€1.150</div><div class="sday" id="days-0">2 vuelos</div></div></div>
+    <div class="srow s1r"><div class="sem">🏰</div><div class="sinfo"><div class="sname" id="name-1">ETAPA 1</div><div class="smeta">23 jul → 5 ago · Varsovia · Cracovia · Vilna · Riga · Tallin · Helsinki</div><span class="pill pill-solo">Solo</span></div><div class="snums"><div class="scost" style="color:var(--blue)" id="cost-1">€1.283</div><div class="sday" id="days-1">13 días · €99/día</div></div></div>
+    <div class="srow s2r"><div class="sem">🎉</div><div class="sinfo"><div class="sname" id="name-2">ETAPA 2</div><div class="smeta">5 ago → 17 ago · Tisno · Dubrovnik · Lecce · Bari</div><span class="pill pill-amigos">Con amigos</span></div><div class="snums"><div class="scost" style="color:var(--pink)" id="cost-2">€1.316</div><div class="sday" id="days-2">12 días · €110/día</div></div></div>
+    <div class="srow s3r"><div class="sem">🌅</div><div class="sinfo"><div class="sname" id="name-3">ETAPA 3</div><div class="smeta">17 ago → 28 ago · Bucarest · Sofia · Skopje · Ohrid</div><span class="pill pill-solo">Solo</span></div><div class="snums"><div class="scost" style="color:var(--orange)" id="cost-3">€1.061</div><div class="sday" id="days-3">9 días · €118/día</div></div></div>
+    <div class="srow s4r"><div class="sem">🌹</div><div class="sinfo"><div class="sname" id="name-4">ETAPA 4</div><div class="smeta">28 ago → 17 sep · Madrid · Andalucía · Marruecos · Valencia</div><span class="pill pill-pareja">En pareja</span></div><div class="snums"><div class="scost" style="color:var(--yellow)" id="cost-4">€1.742</div><div class="sday" id="days-4">20 días · €87/día</div></div></div>
+  </div>
+</div>
+
+<!-- SLIDE 2: MAPA -->
+<div class="slide" id="s2">
+  <div class="shead">
+    <div class="aline" style="background:var(--blue)"></div>
+    <div class="stitle">La <span>ruta</span></div>
+    <div class="ssub">Polonia → Bálticos → Balcanes → España → Marruecos</div>
+  </div>
+  <div class="map-wrap">
+    <div id="routeMap"></div>
+    <div class="map-filters" id="mapFilters"></div>
+  </div>
+</div>
+
+<!-- SLIDE 3: PRESUPUESTO -->
+<div class="slide" id="s3">
+  <div class="shead">
+    <div class="aline" style="background:var(--green)"></div>
+    <div class="stitle"><span>Presupuesto</span> del viaje</div>
+    <div class="ssub" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span>Desglose por categoría · Total <span id="budgetTotal" style="color:var(--text);font-weight:700">€6.6k</span></span>
+      <button id="flightToggle" onclick="toggleFlights()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;">✈ Agregar vuelos largos</button>
+    </div>
+  </div>
+  <div id="budgetBars" style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;max-width:680px;margin:0 auto;width:100%;"></div>
+</div>
+
+<!-- SLIDES 4-7: generados dinámicamente por JS -->
+<div class="slide" id="s4"></div>
+<div class="slide" id="s5"></div>
+<div class="slide" id="s6"></div>
+<div class="slide" id="s7"></div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="goSlide(-1)" disabled>‹</button>
+  <div class="nav-center">
+    <div class="nav-dots" id="navDots"></div>
+    <div class="nav-label" id="slideLabel">Portada</div>
+  </div>
+  <div class="nav-sync">
+    <span id="syncStatus" class="sync-loading">Cargando...</span>
+    <button class="sync-btn" onclick="fetchData()">↻</button>
+  </div>
+  <button class="nav-btn" id="nextBtn" onclick="goSlide(1)">›</button>
+</div>
+
+<script>
+// ── HELPERS ────────────────────────────────────────────────────────
+function tr(icon,route,time,meta,cost,ok){
+  return `<div class="transport-row"><div class="ticon">${icon}</div><div class="tbody"><div class="troute">${route}</div><div class="tmeta">${time} · ${meta} <span class="${ok?'badge-ok':'badge-no'}">${ok?'Confirmado':'Pendiente'}</span></div></div><div class="tcost">${cost}</div></div>`;
+}
+function city(flag,name,dates,mapUrl,rows,tours){
+  const drows=rows.map(([ic,txt,sub])=>`<div class="drow"><div class="dicon">${ic}</div><div class="dcontent">${txt}${sub?`<br><span style="font-size:10px">${sub}</span>`:''}</div></div>`).join('');
+  const tourHtml=tours.length===0?'':
+    `<div class="tours-wrap"><div class="psec-title" style="margin-bottom:5px">Actividades</div>${tours.map(t=>`<div class="tour-item"><div class="tour-body"><div class="tour-name">${t.n} <span class="${t.ok?'badge-ok':'badge-no'}">${t.ok?'✓':'⏳'}</span>${t.link?` <a href="${t.link}" target="_blank" style="color:var(--accent);font-size:10px">↗</a>`:''}</div><div class="tour-meta">${t.m}</div></div><div class="tour-cost">${t.c}</div></div>`).join('')}</div>`;
+  return `<div class="city-card"><div class="city-card-header"><div class="city-flag">${flag}</div><div class="city-info"><div class="city-name">${name}</div><div class="city-dates">${dates}</div></div><a class="map-btn" href="${mapUrl}" target="_blank">🗺 Mapa</a></div><div class="city-body">${drows}${tourHtml}</div></div>`;
+}
+function bd(total,items){
+  return `<div class="bd-bar"><div class="bd-total">${total}</div><div class="bd-items">${items.map(([ic,lbl,v])=>`<div class="bd-item">${ic} ${lbl} <strong>${v}</strong></div>`).join('')}</div></div>`;
+}
+// fila compacta: lugar · país · fechas · noches · costo/noche
+function pl(flag,name,dates,nights,costNight){
+  return `<div class="pl-row">
+    <div class="pl-flag">${flag}</div>
+    <div class="pl-main">
+      <div class="pl-name">${name}</div>
+      <div class="pl-dates">${dates} · ${nights}</div>
+    </div>
+    <div class="pl-cost"><span class="pl-cost-val">${costNight}</span><span class="pl-cost-lbl">/noche</span></div>
+  </div>`;
+}
+function stageSlide(color,titleHtml,sub,idx,content){
+  return `
+    <div class="shead">
+      <div class="aline" style="background:${color}"></div>
+      <div class="stitle">${titleHtml}</div>
+      <div class="ssub">${sub}</div>
+    </div>
+    <div class="detail-wrap">
+      <div id="bdstage-${idx}">${bdForStage(idx)}</div>
+      <div class="scroll-area">${content}</div>
+    </div>`;
+}
+// arma el desglose por día de una etapa desde ETAPAS[idx].cats
+function bdForStage(idx){
+  const e = ETAPAS[idx];
+  const pp = e.pp ? ' p/p' : '';
+  const r = e.cats.map(v=>Math.round(v));
+  const total = r.reduce((s,v)=>s+v,0);
+  return bd('€'+total+'/día',[
+    ['🛏','Alojamiento'+pp,'€'+r[0]],
+    ['🍕','Comida','€'+r[1]],
+    ['🚌','Transporte','€'+r[2]],
+    ['🗺','Actividades','€'+r[3]],
+  ]);
+}
+
+// ── CONTENIDO DE ETAPAS ──────────────────────────────────────────
+const ETAPAS = [
+  // ETAPA 1
+  {
+    color:'#38bdf8',
+    title:'<span id="title-e1">ETAPA 1</span> — Europa del Este',
+    sub:'23 jul → 5 ago · Solo · <span id="edays-0">13 días</span>',
+    cats:[23,35,30,11], pp:false,
+    content: ()=>[
+      pl('🇵🇱','Varsovia · Polonia','23 – 25 jul','2 noches','€22'),
+      pl('🇵🇱','Cracovia · Polonia','25 – 28 jul','3 noches','€19'),
+      pl('🇱🇹','Vilna · Lituania','28 – 30 jul','2 noches','€21'),
+      pl('🇱🇻','Riga · Letonia','30 jul – 2 ago','3 noches','€22'),
+      pl('🇪🇪','Tallin · Estonia','2 – 4 ago','2 noches','€24'),
+      pl('🇫🇮','Helsinki · Finlandia','4 – 5 ago','1 noche','€39'),
+    ].join('')
+  },
+  // ETAPA 2
+  {
+    color:'#ec4899',
+    title:'<span id="title-e2">ETAPA 2</span> — Croacia y Puglia',
+    sub:'5 ago → 17 ago · Con amigos (6 personas) · <span id="edays-1">12 días</span>',
+    cats:[56,25,23,6], pp:true,
+    content: ()=>[
+      pl('🇭🇷','Tisno · Croacia','5 – 10 ago','5 noches','€85'),
+      pl('🇭🇷','Dubrovnik · Croacia','10 – 12 ago','2 noches','€57'),
+      pl('🇮🇹','Lecce · Italia','12 – 14 ago','2 noches','€27'),
+      pl('🇮🇹','Bari · Italia','14 – 17 ago','3 noches','€28'),
+    ].join('')
+  },
+  // ETAPA 3
+  {
+    color:'#f97316',
+    title:'<span id="title-e3">ETAPA 3</span> — Balcanes',
+    sub:'17 ago → 28 ago · Solo · <span id="edays-2">11 días</span>',
+    cats:[39,31,36,13], pp:false,
+    content: ()=>[
+      pl('🇷🇴','Bucarest · Rumania','17 – 20 ago','3 noches','€41'),
+      pl('🇧🇬','Sofia · Bulgaria','21 – 24 ago','3 noches','€32'),
+      pl('🇲🇰','Skopje · Macedonia','24 – 27 ago','3 noches','€38'),
+      pl('🇲🇰','Ohrid · Macedonia','27 – 28 ago','1 noche','€17'),
+    ].join('')
+  },
+  // ETAPA 4
+  {
+    color:'#fbbf24',
+    title:'<span id="title-e4">ETAPA 4</span> — España + Marruecos',
+    sub:'28 ago → 17 sep · En pareja · <span id="edays-3">20 días</span>',
+    cats:[27,30,14,16], pp:true,
+    content: ()=>[
+      pl('🇪🇸','Madrid · España','28 – 29 ago','1 noche','€40'),
+      pl('🇪🇸','Andalucía · España','29 ago – 5 sep','7 noches','€19–35'),
+      pl('🇲🇦','Marrakech · Marruecos','5 – 7 sep','2 noches','€24'),
+      pl('🇲🇦','Fez · Marruecos','7 – 9 sep','2 noches','€14'),
+      pl('🇲🇦','Chefchauen · Marruecos','9 – 11 sep','2 noches','€15'),
+      pl('🇲🇦','Tánger · Marruecos','11 – 12 sep','1 noche','€14'),
+      pl('🇪🇸','Valencia · España','12 – 16 sep','4 noches','€39'),
+      pl('🇪🇸','Madrid · España','16 – 17 sep','1 noche','€32'),
+    ].join('')
+  }
+];
+
+// Renderizar slides 4-7
+['s4','s5','s6','s7'].forEach((id,i)=>{
+  const e=ETAPAS[i];
+  document.getElementById(id).innerHTML=stageSlide(e.color,e.title,e.sub,i,e.content());
+});
+
+// ── SLIDES NAV ────────────────────────────────────────────────────
+const LABELS=['Portada','Las etapas','La ruta','Presupuesto','Etapa 1','Etapa 2','Etapa 3','Etapa 4'];
+let cur=0;
+const dotsEl=document.getElementById('navDots');
+LABELS.forEach((_,i)=>{
+  const d=document.createElement('div');
+  d.className='nav-dot'+(i===0?' active':'');
+  d.onclick=()=>goTo(i);
+  dotsEl.appendChild(d);
+});
+function goTo(idx){
+  document.querySelectorAll('.slide')[cur].classList.remove('active');
+  document.querySelectorAll('.slide')[cur].classList.add('out');
+  setTimeout(()=>document.querySelectorAll('.slide')[cur].classList.remove('out'),350);
+  cur=idx;
+  document.querySelectorAll('.slide')[cur].classList.add('active');
+  document.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===cur));
+  document.getElementById('slideLabel').textContent=LABELS[cur];
+  document.getElementById('prevBtn').disabled=cur===0;
+  document.getElementById('nextBtn').disabled=cur===LABELS.length-1;
+  if(cur===2) setTimeout(()=>map.invalidateSize(),60);
+}
+function goSlide(d){goTo(Math.max(0,Math.min(LABELS.length-1,cur+d)));}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') goSlide(1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp') goSlide(-1);
+});
+
+// ── SYNC ──────────────────────────────────────────────────────────
+const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbwrOZtDASfTrfz2n044RPwZkOyEaVGP9zr0gTE_ZNpbsHhCo8OwhnHWF_adX8a6jqo/exec';
+const DEFAULT={
+  stages:[
+    {etapa:'Vuelos largos',monto:1150,dias:57,xdia:21,pagado:1150,pendiente:0},
+    {etapa:'ETAPA 1',monto:1283,dias:13,xdia:99,pagado:807,pendiente:476},
+    {etapa:'ETAPA 2',monto:1316,dias:12,xdia:110,pagado:334,pendiente:982},
+    {etapa:'ETAPA 3',monto:1061,dias:9,xdia:118,pagado:524,pendiente:537},
+    {etapa:'ETAPA 4',monto:1742,dias:20,xdia:87,pagado:556,pendiente:1186},
+  ],
+  budget:[
+    {costo:2420,pct:'37%'},{costo:1868,pct:'28%'},{costo:1630,pct:'25%'},
+    {costo:337,pct:'5%'},{costo:297,pct:'5%'},
+  ]
+};
+function toNum(v){
+  if(typeof v==='number') return v;
+  let s=String(v).replace(/[€$\s]/g,'');
+  if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s=s.replace(/\./g,'').replace(',','.');
+  else s=s.replace(',','');
+  return parseFloat(s)||0;
+}
+function fmtEur(v){return '€'+Math.round(toNum(v)).toLocaleString('de-DE');}
+function fmtDay(v){return '€'+Math.round(toNum(v));}
+let rawBudget=[];
+let excludeFlights=true;
+const FLIGHT_COST=1150;
+const BCATS=[
+  {name:'✈️ Logística', color:'var(--accent)'},
+  {name:'🛏 Alojamiento', color:'var(--blue)'},
+  {name:'🍕 Comida', color:'var(--green)'},
+  {name:'🗺 Exc. y otros', color:'var(--yellow)'},
+];
+
+function applyData(data){
+  const valid=data.stages.filter(e=>!String(e.etapa).toUpperCase().includes('TOTAL'));
+  valid.forEach((s,i)=>{
+    const ne=document.getElementById(`name-${i}`);
+    const ce=document.getElementById(`cost-${i}`);
+    const de=document.getElementById(`days-${i}`);
+    if(ne&&i>0) ne.textContent=s.etapa;
+    if(ce) ce.textContent=fmtEur(s.monto);
+    if(de&&i>0) de.textContent=`${Math.round(toNum(s.dias))} días · ${fmtDay(s.xdia)}/día`;
+    // desglose por etapa: valid[1..4] -> ETAPAS[0..3]
+    const ei=i-1;
+    if(ei>=0 && ei<ETAPAS.length){
+      const e=ETAPAS[ei];
+      if(s.aloj!=null) e.cats[0]=toNum(s.aloj);
+      if(s.comida!=null) e.cats[1]=toNum(s.comida);
+      if(s.transporte!=null) e.cats[2]=toNum(s.transporte);
+      if(s.actividades!=null) e.cats[3]=toNum(s.actividades);
+      const cont=document.getElementById(`bdstage-${ei}`);
+      if(cont) cont.innerHTML=bdForStage(ei);
+      const dd=document.getElementById(`edays-${ei}`);
+      if(dd && s.dias) dd.textContent=`${Math.round(toNum(s.dias))} días`;
+    }
+  });
+  rawBudget=data.budget;
+  renderBudget();
+}
+function renderBudget(){
+  const b=rawBudget;
+  if(!b.length) return;
+  // 4 categorías: Logística(0), Alojamiento(1), Comida(2), Exc.+Otros(3=3+4)
+  let costos=[
+    toNum(b[0]?.costo||0),
+    toNum(b[1]?.costo||0),
+    toNum(b[2]?.costo||0),
+    toNum(b[3]?.costo||0)+toNum(b[4]?.costo||0),
+  ];
+  if(excludeFlights) costos[0]=Math.max(0,costos[0]-FLIGHT_COST);
+  const total=costos.reduce((s,v)=>s+v,0);
+  // armar y ordenar de mayor a menor
+  const items=BCATS.map((c,i)=>({...c, costo:costos[i], pct:total>0?Math.round(costos[i]/total*100):0}));
+  items.sort((a,z)=>z.costo-a.costo);
+  const cont=document.getElementById('budgetBars');
+  if(cont){
+    cont.innerHTML=items.map(it=>`
+      <div class="bcat">
+        <div class="bcat-name">${it.name}</div>
+        <div class="bcat-bar-wrap"><div class="bcat-bar" style="width:${it.pct}%;background:${it.color}"></div></div>
+        <div class="bcat-amount">${fmtEur(it.costo)}</div>
+        <div class="bcat-pct">${it.pct}%</div>
+      </div>`).join('');
+  }
+  if(total>0){
+    const k='€'+(total/1000).toFixed(1)+'k';
+    const sb=document.getElementById('statBudget');
+    const bt=document.getElementById('budgetTotal');
+    if(sb) sb.textContent=k;
+    if(bt) bt.textContent=k;
+  }
+  const btn=document.getElementById('flightToggle');
+  if(btn){
+    btn.textContent=excludeFlights?'✈ Agregar vuelos largos':'✓ Quitar vuelos largos';
+    btn.style.color=excludeFlights?'var(--muted)':'var(--green)';
+    btn.style.borderColor=excludeFlights?'var(--border)':'var(--green)';
+  }
+}
+function toggleFlights(){excludeFlights=!excludeFlights;renderBudget();}
+async function fetchData(){
+  const s=document.getElementById('syncStatus');
+  s.textContent='Sync...';s.className='sync-loading';
+  try{
+    const r=await fetch(APPS_SCRIPT_URL);
+    const data=await r.json();
+    const valid=data.stages.filter(e=>!String(e.etapa).toUpperCase().includes('TOTAL'));
+    if(valid.length>0){applyData(data);s.textContent='✓ '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});s.className='sync-ok';}
+    else throw new Error();
+  }catch(e){applyData(DEFAULT);s.textContent='Sin conexión';s.className='sync-err';}
+}
+
+// ── MAPA ──────────────────────────────────────────────────────────
+const map=L.map('routeMap',{zoomControl:true,scrollWheelZoom:true,attributionControl:false});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd'}).addTo(map);
+const ROUTES=[
+  {color:'#38bdf8',label:'ETAPA 1',points:[[52.23,21.01,'Varsovia · Polonia'],[50.06,19.94,'Cracovia · Polonia'],[54.69,25.28,'Vilna · Lituania'],[56.95,24.11,'Riga · Letonia'],[59.44,24.75,'Tallin · Estonia'],[60.17,24.94,'Helsinki · Finlandia']]},
+  {color:'#ec4899',label:'ETAPA 2',points:[[43.82,15.65,'Tisno · Croacia'],[42.65,18.09,'Dubrovnik · Croacia'],[40.35,18.17,'Lecce · Italia'],[41.12,16.87,'Bari · Italia']]},
+  {color:'#f97316',label:'ETAPA 3',points:[[44.43,26.10,'Bucarest · Rumania'],[42.70,23.32,'Sofia · Bulgaria'],[41.99,21.43,'Skopje · Macedonia'],[41.12,20.80,'Ohrid · Macedonia']]},
+  {color:'#fbbf24',label:'ETAPA 4',points:[[40.42,-3.70,'Madrid · España'],[36.72,-4.42,'Andalucía · España'],[31.63,-8.01,'Marrakech · Marruecos'],[34.03,-5.00,'Fez · Marruecos'],[35.17,-5.27,'Chefchauen · Marruecos'],[35.77,-5.80,'Tánger · Marruecos'],[39.47,-0.38,'Valencia · España'],[40.42,-3.70,'Madrid · España']]},
+];
+function mkIcon(c){return L.divIcon({className:'',html:`<div style="width:9px;height:9px;border-radius:50%;background:${c};border:2px solid #fff;box-shadow:0 0 5px ${c}88"></div>`,iconSize:[9,9],iconAnchor:[4,4]});}
+const stageLayers=ROUTES.map(r=>{
+  const line=L.polyline(r.points.map(p=>[p[0],p[1]]),{color:r.color,weight:2.5,opacity:.85}).addTo(map);
+  const markers=r.points.map(p=>L.marker([p[0],p[1]],{icon:mkIcon(r.color)}).bindTooltip(p[2],{direction:'top',offset:[0,-6],opacity:.95}).addTo(map));
+  return{line,markers,visible:true};
+});
+map.fitBounds([[30,-10],[61,27]],{padding:[8,8]});
+const filtersEl=document.getElementById('mapFilters');
+ROUTES.forEach((r,i)=>{
+  const btn=document.createElement('button');
+  btn.className='mfbtn';
+  btn.innerHTML=`<div class="dot" style="background:${r.color}"></div>${r.label}`;
+  btn.style.borderColor=r.color;
+  btn.onclick=()=>{
+    const l=stageLayers[i];l.visible=!l.visible;
+    if(l.visible){l.line.addTo(map);l.markers.forEach(m=>m.addTo(map));btn.classList.remove('off');}
+    else{map.removeLayer(l.line);l.markers.forEach(m=>map.removeLayer(m));btn.classList.add('off');}
+  };
+  filtersEl.appendChild(btn);
+});
+
+rawBudget=DEFAULT.budget;
+applyData(DEFAULT);
+fetchData();
+</script>
+</body>
+</html>
